@@ -29,9 +29,11 @@ form.addEventListener('submit', async (e) => {
     const data = await res.json();
     
     if (data.error) {
-        chatBox.innerHTML += `<div class="error">Error: ${data.error}</div>`;
-    } else {
+        chatBox.innerHTML += `<div class="error">⚠️ ${data.error}</div>`;
+    } else if (data.reply) {
         chatBox.innerHTML += `<div class="ai-msg">${data.reply}</div>`;
+    } else {
+        chatBox.innerHTML += `<div class="error">⚠️ Respuesta vacía del servidor</div>`;
     }
     chatBox.scrollTop = chatBox.scrollHeight;
 });

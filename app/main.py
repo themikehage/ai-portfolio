@@ -31,7 +31,7 @@ async def chat_page():
 @app.post("/api/chat")
 async def chat(message: str):
     if not MINIMAX_API_KEY:
-        return {"error": "MINIMAX_API_KEY no configurada"}
+        return {"error": "MINIMAX_API_KEY no configurada. Añádela en las variables de entorno."}
 
     headers = {
         "Authorization": f"Bearer {MINIMAX_API_KEY}",
@@ -45,8 +45,29 @@ async def chat(message: str):
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(MINIMAX_API_URL, json=payload, headers=headers, timeout=30)
+            
+            if response.status_code != 200:
+                return {"error": f"Error de API: código {response.status_code}"}
+            
             data = response.json()
-            reply = data.get("choices", [{}])[0].get("message", {}).get("content", "Sin respuesta")
+            
+            # Debug: log response structure if choices is empty
+            choices = data.get("choices")
+            if not choices:
+                return {"error": "Respuesta inválida de MiniMax. Revisa la API key."}
+            
+            first_choice = choices[0] if choices else {}
+            msg = first_choice.get("message", {}) if isinstance(first_choice, dict) else {}
+            reply = msg.get("content")
+            
+            if not reply:
+                return {"error": "No se recibió contenido en la respuesta."}
+            
             return {"reply": reply}
+            
+        except httpx.TimeoutException:
+            return {"error": "Tiempo de espera agotado. Inténtalo de nuevo."}
+        except httpx.ConnectError:
+            return {"error": "Error de conexión. Verifica tu red."}
         except Exception as e:
-            return {"error": str(e)}
+            return {"error": f"Error inesperado: {type(e).__name__}"}
