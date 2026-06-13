@@ -51,19 +51,27 @@ async def chat(message: str):
             
             data = response.json()
             
-            # Debug: log response structure if choices is empty
+            # Estructura estándar OpenAI-like: choices[0].message.content
             choices = data.get("choices")
-            if not choices:
-                return {"error": "Respuesta inválida de MiniMax. Revisa la API key."}
+            if choices and len(choices) > 0:
+                first_choice = choices[0]
+                if isinstance(first_choice, dict):
+                    msg = first_choice.get("message", {})
+                    reply = msg.get("content") if isinstance(msg, dict) else None
+                    if reply:
+                        return {"reply": reply}
             
-            first_choice = choices[0] if choices else {}
-            msg = first_choice.get("message", {}) if isinstance(first_choice, dict) else {}
-            reply = msg.get("content")
+            # Si llegamos aquí, la respuesta no tiene el formato esperado
+            # Devolvemos el texto completo para debug
+            reply_text = data.get("text") or data.get("content") or data.get("message", "")
+            if isinstance(reply_text, str) and reply_text:
+                return {"reply": reply_text}
             
-            if not reply:
-                return {"error": "No se recibió contenido en la respuesta."}
-            
-            return {"reply": reply}
+            # Debug: devolver info de error con la respuesta completa (sanitizada)
+            return {
+                "error": "No se pudo parsear la respuesta",
+                "debug": {k: str(v)[:100] for k, v in data.items()}
+            }
             
         except httpx.TimeoutException:
             return {"error": "Tiempo de espera agotado. Inténtalo de nuevo."}
