@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="chat-container">
+    <h1>Chat con IA</h1>
+    <div id="chat-box"></div>
+    <form id="chat-form">
+        <input type="text" id="message" placeholder="Escribe tu mensaje..." required>
+        <button type="submit">Enviar</button>
+    </form>
+</section>
+
+<script>
+const form = document.getElementById('chat-form');
+const chatBox = document.getElementById('chat-box');
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const message = document.getElementById('message').value;
+    
+    chatBox.innerHTML += `<div class="user-msg">${message}</div>`;
+    document.getElementById('message').value = '';
+
+    const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message})
+    });
+    const data = await res.json();
+    
+    if (data.error) {
+        chatBox.innerHTML += `<div class="error">Error: ${data.error}</div>`;
+    } else {
+        chatBox.innerHTML += `<div class="ai-msg">${data.reply}</div>`;
+    }
+    chatBox.scrollTop = chatBox.scrollHeight;
+});
+</script>
+{% endblock %}
